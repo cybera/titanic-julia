@@ -1,0 +1,5 @@
+Pkg.add("Plots")
+Pkg.add("StatPlots")
+Pkg.add("FreqTable")
+Pkg.add("DataFrames")
+Pkg.add("PyPlot")

@@ -1,0 +1,7 @@
+#!/usr/bin/env julia
+
+include(joinpath("..", "src", "lib", "Config.jl"))
+
+CURRENT_SCRIPT = joinpath(Config.Path.scripts, "$(ARGS[1]).jl")
+
+include(CURRENT_SCRIPT)
