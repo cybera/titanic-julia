@@ -8,6 +8,7 @@ titanic = Dataset.fetch(:titanic)
 freqtable(titanic[:Survived])
 freqtable(titanic, :Sex, :Survived)
 
+# TODO: Way to move enum definitions out here?
 titanic[:Survived] = to_enum(SurvivedType, titanic[:Survived])
 pool!(titanic, [:Sex, :Survived])
 
@@ -20,6 +21,10 @@ pie(["Dead","Survived"],freqtable(titanic, :Survived))
 
 male = titanic[titanic[:Sex] .== "male",:]
 female = titanic[titanic[:Sex] .== "female",:]
+
+# or (via framework):
+male = subset(titanic, :Sex, "male")
+female = subset(titanic, :Sex, "female")
 
 layout = grid(1,2)
 pie(["Dead","Survived"],freqtable(male, :Survived),title="Survival Portion of Men",layout=layout)
