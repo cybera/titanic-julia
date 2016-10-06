@@ -1,3 +1,10 @@
+# This borrows from existing R tutorials on the Titanic data set
+#
+#   "Kaggle R Tutorial on Machine Learning" from datacamp.com
+#   Data Science Dojo
+#
+# The point here is to show how you can do roughly equivalent 
+# operations and exploration with Julia.
 
 using FreqTables
 using Titanic
