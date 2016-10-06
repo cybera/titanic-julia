@@ -23,6 +23,7 @@ levels(titanic[:Survived])
 freqtable(titanic, :Sex, :Survived)
 
 using StatPlots
+pyplot()
 
 pie(["Female", "Male"], freqtable(titanic, :Sex))
 pie(["Dead", "Survived"],freqtable(titanic, :Survived))
