@@ -20,6 +20,7 @@ titanic[:Survived] = to_enum(SurvivedType, titanic[:Survived])
 pool!(titanic, [:Sex, :Survived])
 
 levels(titanic[:Survived])
+freqtable(titanic, :Sex, :Survived)
 
 using StatPlots
 
