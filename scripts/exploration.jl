@@ -8,7 +8,7 @@ titanic = Dataset.fetch(:titanic)
 freqtable(titanic[:Survived])
 freqtable(titanic, :Sex, :Survived)
 
-# TODO: Way to move enum definitions out here?
+@enum SurvivedType Dead=0 Survived=1
 titanic[:Survived] = to_enum(SurvivedType, titanic[:Survived])
 pool!(titanic, [:Sex, :Survived])
 
@@ -17,7 +17,7 @@ levels(titanic[:Survived])
 using StatPlots
 
 pie(["Female", "Male"], freqtable(titanic, :Sex))
-pie(["Dead","Survived"],freqtable(titanic, :Survived))
+pie(["Dead", "Survived"],freqtable(titanic, :Survived))
 
 male = titanic[titanic[:Sex] .== "male",:]
 female = titanic[titanic[:Sex] .== "female",:]
@@ -42,3 +42,29 @@ histogram(titanic_clean[:Age], xlabel="Distribution of Age", ylabel="Frequency o
 
 density(titanic_clean, :Age, groups=:Survived, linecolor=:auto, linewidth=3)
 density(titanic_clean, :Age, groups=:Sex, linecolor=:auto, linewidth=3)
+
+@enum ChildType Child=0 Adult=1
+
+titanic[:Child] = to_enum(ChildType, map(titanic[:Age]) do x
+  if isna(x)
+    NA
+  elseif x < 13
+    Child
+  else
+    Adult
+  end
+end)
+
+function remove_na(titanic_df, colnames...)
+  ret = titanic_df;
+  for colname in colnames
+    ret = ret[~isna(ret[colname]),:];
+  end
+  ret
+end
+
+titanic_clean = remove_na(titanic, :Age, :Sex, :Survived, :Child)
+
+import CustomPlots
+
+CustomPlots.facetgridbox(titanic_clean, :Fare, xsplit=:Survived, ysplit=:Sex, boxsplit=:Child)

@@ -5,8 +5,7 @@ import Plots
 
 export to_enum, SurvivedType
 
-@enum SurvivedType Dead=0 Survived=1
-Plots.convertToAnyVector(v::Array{SurvivedType}, d::Dict{Symbol,Any}) = Plots.convertToAnyVector(map(string,v), d)
-to_enum{T<:Enum}(t::Type{T}, v::DataArray{Int}) = convert(PooledDataArray{t}, v)
+Plots.convertToAnyVector{T<:Enum}(v::Array{T}, d::Dict{Symbol,Any}) = Plots.convertToAnyVector(map(string,v), d)
+to_enum{T<:Enum}(t::Type{T}, v) = convert(PooledDataArray{t}, v)
 
 end
