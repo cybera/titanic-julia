@@ -7,7 +7,8 @@ pkgs = ["Requests",
         "StatPlots",
         "FreqTables",
         "DataFrames",
-        "PyPlot"]
+        "PyPlot",
+        "DecisionTree"]
 
 for pkg in pkgs
   Pkg.add(pkg)
