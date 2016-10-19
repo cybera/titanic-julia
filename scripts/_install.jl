@@ -8,7 +8,9 @@ pkgs = ["Requests",
         "FreqTables",
         "DataFrames",
         "PyPlot",
-        "DecisionTree"]
+        "DecisionTree",
+        "PlotlyJS",
+        "MultivariateStats"]
 
 for pkg in pkgs
   Pkg.add(pkg)
