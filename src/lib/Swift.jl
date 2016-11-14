@@ -5,10 +5,35 @@ using URIParser, Requests
 
 export list_objects, get_object, download_object, upload_object
 
-type SwiftAuthentication
+abstract AbstractSwiftAuthentication
+
+type NoSwiftAuthentication <: AbstractSwiftAuthentication
+end
+
+type ReadOnlySwiftAuthentication <: AbstractSwiftAuthentication
+  url::AbstractString
+end
+
+type SwiftAuthentication <: AbstractSwiftAuthentication
   token::AbstractString
   url::AbstractString
   expires::DateTime
+end
+
+abstract AbstractAuthInfo
+
+type AuthInfo <: AbstractAuthInfo
+  url::AbstractString 
+  username::AbstractString
+  password::AbstractString
+  tenant_name::AbstractString
+end
+
+type ReadOnlyAuthInfo <: AbstractAuthInfo
+  url::AbstractString
+end
+
+type NoAuthInfo <: AbstractAuthInfo
 end
 
 authentication = Nullable{SwiftAuthentication}()
@@ -82,17 +107,14 @@ function upload_object(container::AbstractString, object::AbstractString; filepa
   end
 end
 
-function authenticate( ; url::AbstractString = ENV["OS_AUTH_URL"] * "/" * "tokens", 
-                         username::AbstractString = ENV["OS_USERNAME"], 
-                         password::AbstractString = ENV["OS_PASSWORD"],
-                         tenant_name::AbstractString = ENV["OS_TENANT_NAME"])
+function authenticate(auth_info::AuthInfo)
   auth = Dict("auth" => 
     Dict("passwordCredentials" => 
-      Dict("username" => username, 
-           "password" => password), 
-      "tenantName" => tenant_name))
+      Dict("username" => auth_info.username, 
+           "password" => auth_info.password), 
+      "tenantName" => auth_info.tenant_name))
 
-  response = Requests.post(url; json = auth)
+  response = Requests.post(auth_info.url; json = auth)
   
   if response.status == 200
     json_obj = JSON.parse(readall(response))
@@ -106,12 +128,33 @@ function authenticate( ; url::AbstractString = ENV["OS_AUTH_URL"] * "/" * "token
     error("Could not authenticate to $tenant_name with $username")
   end
 end
+authenticate(auth_info::ReadOnlyAuthInfo) = ReadOnlySwiftAuthentication(auth_info.url)
+authenticate(auth_info::NoAuthInfo) = NoSwiftAuthentication()
+
+check_credentials(creds...) = isempty(setdiff(creds, keys(ENV)))
+function get_auth_info()
+  if check_credentials("OS_AUTH_URL", "OS_USERNAME", "OS_PASSWORD", "OS_TENANT_NAME")
+    AuthInfo(ENV["OS_AUTH_URL"] * "/" * "tokens", ENV["OS_USERNAME"], ENV["OS_PASSWORD"], ENV["OS_TENANT_NAME"])
+  elseif check_credentials("OS_SWIFT_URL")
+    ReadOnlyAuthInfo(ENV["OS_SWIFT_URL"])
+  else
+    return NoAuthInfo()
+  end
+end
+
+function set_auth_headers(auth::SwiftAuthentication, headers)
+  headers["X-Auth-Token"] = auth.token
+end
+set_auth_headers(auth::ReadOnlySwiftAuthentication, headers) = return
+set_auth_headers{T <: AbstractSwiftAuthentication}(auth::Nullable{T}, headers) = 
+  set_auth_headers(get(auth), headers)
+
+expired(auth::ReadOnlySwiftAuthentication) = false
+expired(auth::SwiftAuthentication) = auth.expires < Dates.now()
+expired{T <: AbstractSwiftAuthentication}(auth::Nullable{T}) = expired(get(authentication))
 
 function api_call(response_handler::Function, verb, path; 
-                  url::AbstractString = ENV["OS_AUTH_URL"] * "/" * "tokens", 
-                  username::AbstractString = ENV["OS_USERNAME"], 
-                  password::AbstractString = ENV["OS_PASSWORD"],
-                  tenant_name::AbstractString = ENV["OS_TENANT_NAME"],
+                  auth_info = get_auth_info(),
                   headers = Dict(),
                   query = Dict(),
                   jsonResponse = false,
@@ -120,14 +163,16 @@ function api_call(response_handler::Function, verb, path;
                   content_length = filesize(filepath))
   global authentication
 
-  if isnull(authentication) || get(authentication).expires < Dates.now()
-    authentication::Nullable{SwiftAuthentication} = Nullable(authenticate( ; url = url, username = username, password = password, tenant_name = tenant_name))
+  if isnull(authentication) || expired(authentication)
+    authentication = Nullable(authenticate(auth_info))
   end
 
-  token = get(authentication).token
-  swift_url = get(authentication).url
+  if typeof(authentication) == Nullable{NoSwiftAuthentication}
+    return ""
+  end
 
-  headers["X-Auth-Token"] = token
+  swift_url = get(authentication).url
+  set_auth_headers(authentication, headers)
 
   if jsonResponse
     query["format"] = "json"

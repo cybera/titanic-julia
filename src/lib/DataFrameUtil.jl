@@ -59,8 +59,8 @@ module DataFrameUtil
     close(f);
   end
 
-  Base.convert(T::Type{Date}, val::UTF8String) = T(val, DateFormat("yyyy-mm-dd"))
-  to_date(col::DataArrays.DataArray{UTF8String,1}) = convert(DataArrays.DataArray{Date,1}, col)
+  Base.convert(T::Type{Date}, val::String) = T(val, DateFormat("yyyy-mm-dd"))
+  to_date(col::DataArrays.DataArray{String,1}) = convert(DataArrays.DataArray{Date,1}, col)
 
   to_json(obj,groupcols) = JSON.json(obj)
   function to_json(f::AbstractDataFrame,groupcols)
